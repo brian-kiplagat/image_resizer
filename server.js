@@ -46,11 +46,14 @@ app.post("/add-border", async (req, res) => {
       },
     })
       .composite([{ input: imageBuffer, top: border_size, left: border_size }])
-      .png()
+      .jpeg({ 
+        quality: 100,  // Maximum JPEG quality
+        mozjpeg: true  // Use mozjpeg for better compression while maintaining quality
+      })
       .toBuffer();
 
-    // Convert buffer to base64
-    const base64Image = `data:image/png;base64,${borderedImageBuffer.toString(
+    // Convert buffer to base64 (update mime type to jpeg)
+    const base64Image = `data:image/jpeg;base64,${borderedImageBuffer.toString(
       "base64"
     )}`;
 
