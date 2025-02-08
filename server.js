@@ -114,7 +114,7 @@ app.post("/add-border", async (req, res) => {
   } catch (error) {
     console.error("Error processing image:", error);
     res
-      .status(500)
+      .status(400)
       .json({ error: "Failed to process image.", reason: error.message });
   }
 });
