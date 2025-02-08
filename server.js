@@ -1,8 +1,8 @@
 const express = require("express");
 const sharp = require("sharp");
 const bodyParser = require("body-parser");
-const { google } = require('googleapis');
-const path = require('path');
+const { google } = require("googleapis");
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,16 +10,16 @@ const PORT = process.env.PORT || 3000;
 app.use(bodyParser.json({ limit: "10mb" })); // Increase payload limit for large images
 
 // Add Google Drive authentication configuration
-const KEYFILEPATH = process.env.GOOGLE_APPLICATION_CREDENTIALS || path.join(__dirname, 'keys.json');
-const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
-const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || '1mD8gu8bm420siEPI9enGKqKfyP5Svi2h';
+const KEYFILEPATH = path.join(__dirname, "keys.json");
+const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
+const folderId = "1mD8gu8bm420siEPI9enGKqKfyP5Svi2h";
 const auth = new google.auth.GoogleAuth({
   keyFile: KEYFILEPATH,
   scopes: SCOPES,
 });
 
 // Create Google Drive client
-const driveClient = google.drive({ version: 'v3', auth });
+const driveClient = google.drive({ version: "v3", auth });
 
 // API route to add border to base64 image
 app.post("/add-border", async (req, res) => {
@@ -60,9 +60,9 @@ app.post("/add-border", async (req, res) => {
       },
     })
       .composite([{ input: imageBuffer, top: border_size, left: border_size }])
-      .jpeg({ 
-        quality: 100,  // Maximum JPEG quality
-        mozjpeg: true  // Use mozjpeg for better compression while maintaining quality
+      .jpeg({
+        quality: 100, // Maximum JPEG quality
+        mozjpeg: true, // Use mozjpeg for better compression while maintaining quality
       })
       .toBuffer();
 
@@ -73,21 +73,21 @@ app.post("/add-border", async (req, res) => {
     };
 
     const media = {
-      mimeType: 'image/jpeg',
-      body: require('stream').Readable.from([borderedImageBuffer])
+      mimeType: "image/jpeg",
+      body: require("stream").Readable.from([borderedImageBuffer]),
     };
 
     const file = await driveClient.files.create({
       requestBody: fileMetadata,
       media: media,
-      fields: 'id, webViewLink',
+      fields: "id, webViewLink",
     });
 
     res.json({
       status: "success",
       border_size,
       fileId: file.data.id,
-      viewLink: file.data.webViewLink
+      viewLink: file.data.webViewLink,
     });
   } catch (error) {
     console.error("Error processing image:", error);
