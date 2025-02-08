@@ -32,7 +32,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           source: "."
-          target: "/var/www/myapp"
+          target: "/image_resizer"
 
       # (Optional) Restart the Node.js process using SSH
       - name: Restart Application via SSH
@@ -43,8 +43,8 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           script: |
-            cd /var/www/myapp
+            cd /image_resizer
             # Install production dependencies (if needed)
             npm install --production
             # Restart the app using PM2 (or start it if it isn’t running)
-            pm2 reload myapp || pm2 start app.js --name myapp
+            pm2 reload image-api   || pm2 start server.js --name image-api  
