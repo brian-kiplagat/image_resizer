@@ -3,6 +3,7 @@ const sharp = require("sharp");
 const bodyParser = require("body-parser");
 const { google } = require("googleapis");
 const path = require("path");
+const fs = require("fs");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,9 +13,20 @@ app.use(bodyParser.json({ limit: "10mb" })); // Increase payload limit for large
 // Add Google Drive authentication configuration
 const KEYFILEPATH = path.join(__dirname, "keys.json");
 const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
-const folderId = "1mD8gu8bm420siEPI9enGKqKfyP5Svi2h";
+const folderId =
+  process.env.GOOGLE_DRIVE_FOLDER_ID || "1mD8gu8bm420siEPI9enGKqKfyP5Svi2h";
+
+// Read credentials directly from the file
+let credentials;
+try {
+  credentials = JSON.parse(fs.readFileSync(KEYFILEPATH, "utf8"));
+} catch (error) {
+  console.error("Error reading credentials file:", error);
+  process.exit(1);
+}
+
 const auth = new google.auth.GoogleAuth({
-  keyFile: KEYFILEPATH,
+  credentials: credentials, // Pass the parsed credentials directly
   scopes: SCOPES,
 });
 
