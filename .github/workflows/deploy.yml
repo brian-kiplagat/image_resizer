@@ -16,21 +16,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-<<<<<<< HEAD
           node-version: "20"
-=======
-          node-version: '20'
-
->>>>>>> e4ab7bcde541d4afa60305fa9ba5cf9cab8afe57
 
       # Install dependencies
       - name: Install dependencies
         run: npm install
 
-<<<<<<< HEAD
-=======
-     
->>>>>>> e4ab7bcde541d4afa60305fa9ba5cf9cab8afe57
       # Deploy to the Ubuntu server using scp
       - name: Copy files via SCP
         uses: appleboy/scp-action@master
@@ -43,13 +34,8 @@ jobs:
           timeout: "200s"
           target: "~/image_resizer"
 
-<<<<<<< HEAD
       # Setup credentials and restart application
       - name: Setup and Restart via SSH
-=======
-      # (Optional) Restart the Node.js process using SSH
-      - name: Restart Application via SSH
->>>>>>> e4ab7bcde541d4afa60305fa9ba5cf9cab8afe57
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -58,14 +44,6 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           script: |
             cd ~/image_resizer
-<<<<<<< HEAD
             echo "${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}" > keys.json
             npm install --production
             pm2 reload image-api || pm2 start server.js --name image-api
-=======
-            # Install production dependencies (if needed)
-            npm install --production
-            # Restart the app using PM2 (or start it if it isn’t running)
-            pm2 reload image-api   || pm2 start server.js --name image-api  
-
->>>>>>> e4ab7bcde541d4afa60305fa9ba5cf9cab8afe57
