@@ -1,12 +1,22 @@
 const express = require("express");
 const sharp = require("sharp");
 const bodyParser = require("body-parser");
+const cors = require("cors");
 const { google } = require("googleapis");
 const path = require("path");
 const fs = require("fs");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Enable CORS for all routes
+app.use(
+  cors({
+    origin: "*", // Allow all origins
+    methods: ["GET", "POST"], // Allowed methods
+    allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
+  })
+);
 
 app.use(bodyParser.json({ limit: "10mb" })); // Increase payload limit for large images
 
