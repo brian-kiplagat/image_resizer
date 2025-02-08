@@ -32,6 +32,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           source: "."
+          timeout: "200s"
           target: "~/image_resizer"
 
       # (Optional) Restart the Node.js process using SSH
