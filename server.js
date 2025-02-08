@@ -54,7 +54,13 @@ app.post("/add-border", async (req, res) => {
         .status(400)
         .json({ error: "Invalid or missing image_base64." });
     }
-    if (border_size === undefined || border_size < 0 || border_size > 50) {
+    if (!border_size || typeof border_size !== "number") {
+      return res
+        .status(400)
+        .json({ error: "Invalid or missing border_size." });
+    }
+
+    if (border_size === undefined || border_size < 0 || border_size > 100) {
       return res
         .status(400)
         .json({ error: "border_size must be between 0 and 50." });
