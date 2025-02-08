@@ -55,9 +55,7 @@ app.post("/add-border", async (req, res) => {
         .json({ error: "Invalid or missing image_base64." });
     }
     if (!border_size || typeof border_size !== "number") {
-      return res
-        .status(400)
-        .json({ error: "Invalid or missing border_size." });
+      return res.status(400).json({ error: "Invalid or missing border_size." });
     }
 
     if (border_size === undefined || border_size < 0 || border_size > 100) {
@@ -69,40 +67,53 @@ app.post("/add-border", async (req, res) => {
     const borderColor = border_color || "#000000"; // Default to black
     const borderRGBA = hexToRGBA(borderColor); // Convert hex to RGBA
 
-    // Remove metadata from base64
     const base64Data = image_base64.replace(/^data:image\/\w+;base64,/, "");
     const imageBuffer = Buffer.from(base64Data, "base64");
 
-    // Get original image dimensions
-    const metadata = await sharp(imageBuffer).metadata();
-    const newWidth = metadata.width + border_size * 2;
-    const newHeight = metadata.height + border_size * 2;
+    let processedImageBuffer;
 
-    // Create a new image with a border
-    const borderedImageBuffer = await sharp({
-      create: {
-        width: newWidth,
-        height: newHeight,
-        channels: 4, // RGBA
-        background: borderRGBA,
-      },
-    })
-      .composite([{ input: imageBuffer, top: border_size, left: border_size }])
-      .jpeg({
-        quality: 100, // Maximum JPEG quality
-        mozjpeg: true, // Use mozjpeg for better compression while maintaining quality
+    if (border_size === 0) {
+      // If border_size is 0, just convert to JPEG without adding border
+      processedImageBuffer = await sharp(imageBuffer)
+        .jpeg({
+          quality: 100,
+          mozjpeg: true,
+        })
+        .toBuffer();
+    } else {
+      // Get original image dimensions
+      const metadata = await sharp(imageBuffer).metadata();
+      const newWidth = metadata.width + border_size * 2;
+      const newHeight = metadata.height + border_size * 2;
+
+      // Create a new image with a border
+      processedImageBuffer = await sharp({
+        create: {
+          width: newWidth,
+          height: newHeight,
+          channels: 4,
+          background: borderRGBA,
+        },
       })
-      .toBuffer();
+        .composite([
+          { input: imageBuffer, top: border_size, left: border_size },
+        ])
+        .jpeg({
+          quality: 100,
+          mozjpeg: true,
+        })
+        .toBuffer();
+    }
 
     // Upload to Google Drive
     const fileMetadata = {
-      name: `bordered_image_${Date.now()}.jpg`,
+      name: `image_${Date.now()}.jpg`,
       parents: [folderId],
     };
 
     const media = {
       mimeType: "image/jpeg",
-      body: require("stream").Readable.from([borderedImageBuffer]),
+      body: require("stream").Readable.from([processedImageBuffer]),
     };
 
     const file = await driveClient.files.create({
@@ -119,12 +130,9 @@ app.post("/add-border", async (req, res) => {
     });
   } catch (error) {
     console.error("Error processing image:", error);
-    res
-      .status(400)
-      .json({ error: "Failed to process image.", reason: error.message });
+    res.status(500).json({ error: "Failed to process image." });
   }
 });
-
 
 // Convert hex to RGBA (Sharp requires an array format)
 function hexToRGBA(hex) {
