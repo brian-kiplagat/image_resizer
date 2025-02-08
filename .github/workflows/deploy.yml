@@ -1,0 +1,49 @@
+name: Deploy Node.js Express API
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the latest code from Git
+      - uses: actions/checkout@v3
+
+      # Setup Node.js environment
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+
+      # Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Deploy to the Ubuntu server using scp
+      - name: Copy files via SCP
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "."
+          timeout: "200s"
+          target: "~/image_resizer"
+
+      # Setup credentials and restart application
+      - name: Setup and Restart via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            cd ~/image_resizer
+            echo "${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}" > keys.json
+            npm install --production
+            pm2 reload image-api || pm2 start server.js --name image-api

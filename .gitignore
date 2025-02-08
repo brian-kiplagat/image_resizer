@@ -1,0 +1,47 @@
+# Node.js dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Build directories
+dist/
+build/
+coverage/
+
+# Dependency directory
+.babel-cache/
+.cache/
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.swp
+*~
+*.bak
+
+# Ignore any npm package lock file for Yarn users
+yarn.lock
+
+# Ignore VSCode settings folder (optional)
+.vscode/
+
+# Temporary image and file uploads (for example, from sharp processing)
+temp/
+# Ignore credentials
+keys.json
