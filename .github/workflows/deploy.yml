@@ -45,5 +45,7 @@ jobs:
           script: |
             cd ~/image_resizer
             echo "${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}" > keys.json
+            npm uninstall sharp
+            npm install --os=linux --cpu=x64 sharp
             npm install --production
             pm2 reload image-api || pm2 start server.js --name image-api
