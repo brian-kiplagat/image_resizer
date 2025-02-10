@@ -62,11 +62,8 @@ app.post("/add-border", async (req, res) => {
     }
     //check if orderID is present and valid
     if (!orderID || typeof orderID !== "string") {
-      return res
-        .status(400)
-        .json({ error: "Invalid or missing orderID" });
+      return res.status(400).json({ error: "Invalid or missing orderID" });
     }
-
 
     if (!originalbase64Image || typeof originalbase64Image !== "string") {
       return res
@@ -142,7 +139,7 @@ app.post("/add-border", async (req, res) => {
 
     // Upload to Google Drive
     const fileMetadata = {
-      name: `image_${orderID}_${Date.now()}.jpg`,
+      name: `${orderID}_${Date.now()}.jpg`,
       parents: [folderId],
     };
 
@@ -166,7 +163,7 @@ app.post("/add-border", async (req, res) => {
     const originalImageBuffer = Buffer.from(originalBase64Data, "base64");
 
     const originalFileMetadata = {
-      name: `image_${orderID}_Original.jpg`,
+      name: `${orderID}_Original.jpg`,
       parents: [folderId],
     };
 
