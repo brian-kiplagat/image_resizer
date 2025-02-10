@@ -60,6 +60,13 @@ app.post("/add-border", async (req, res) => {
     if (!image_base64 || typeof image_base64 !== "string") {
       return res.status(400).json({ error: "Invalid or missing image_base64" });
     }
+    //check if orderID is present and valid
+    if (!orderID || typeof orderID !== "string") {
+      return res
+        .status(400)
+        .json({ error: "Invalid or missing orderID" });
+    }
+
 
     if (!originalbase64Image || typeof originalbase64Image !== "string") {
       return res
