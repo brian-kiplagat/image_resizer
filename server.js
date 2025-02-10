@@ -46,28 +46,53 @@ const driveClient = google.drive({ version: "v3", auth });
 // API route to add border to base64 image
 app.post("/add-border", async (req, res) => {
   try {
-    // Validate request
-    const { image_base64, border_size, border_color } = req.body;
+    // Validate request with detailed error messages
+    const {
+      image_base64,
+      originalbase64Image,
+      border_size,
+      border_color,
+      orientation,
+      orderID,
+    } = req.body;
 
+    // Check if required fields are present and valid
     if (!image_base64 || typeof image_base64 !== "string") {
-      return res
-        .status(400)
-        .json({ error: "Invalid or missing image_base64." });
+      return res.status(400).json({ error: "Invalid or missing image_base64" });
     }
 
-    // Modified validation to properly handle zero
-    if (
-      border_size === undefined ||
-      typeof border_size !== "number" ||
-      border_size < 0 ||
-      border_size > 100
-    ) {
+    if (!originalbase64Image || typeof originalbase64Image !== "string") {
       return res
         .status(400)
-        .json({ error: "border_size must be between 0 and 100." });
+        .json({ error: "Invalid or missing originalbase64Image" });
+    }
+    //ensure image is rquired types eg png, jpg, jpeg, etc
+    if (!image_base64.startsWith("data:image/")) {
+      return res
+        .status(400)
+        .json({ error: "Invalid image format. Must start with 'data:image/'" });
     }
 
-    const borderColor = border_color || "#000000"; // Default to black
+    if (!orientation || !["Portrait", "Landscape"].includes(orientation)) {
+      return res.status(400).json({
+        error:
+          "Invalid or missing orientation. Must be 'Portrait' or 'Landscape'",
+      });
+    }
+
+    // Validate border_size
+    if (border_size === undefined || typeof border_size !== "number") {
+      return res
+        .status(400)
+        .json({ error: "border_size is required and must be a number" });
+    }
+    if (border_size < 0 || border_size > 100) {
+      return res
+        .status(400)
+        .json({ error: "border_size must be between 0 and 100" });
+    }
+
+    const borderColor = border_color || "#000000"; // Default to black if falsy
     const borderRGBA = hexToRGBA(borderColor); // Convert hex to RGBA
 
     const base64Data = image_base64.replace(/^data:image\/\w+;base64,/, "");
@@ -110,7 +135,7 @@ app.post("/add-border", async (req, res) => {
 
     // Upload to Google Drive
     const fileMetadata = {
-      name: `image_${Date.now()}.jpg`,
+      name: `image_${orderID}_${Date.now()}.jpg`,
       parents: [folderId],
     };
 
@@ -119,9 +144,33 @@ app.post("/add-border", async (req, res) => {
       body: require("stream").Readable.from([processedImageBuffer]),
     };
 
+    // Upload processed image
     const file = await driveClient.files.create({
       requestBody: fileMetadata,
       media: media,
+      fields: "id, webViewLink",
+    });
+
+    // Upload original image
+    const originalBase64Data = originalbase64Image.replace(
+      /^data:image\/\w+;base64,/,
+      ""
+    );
+    const originalImageBuffer = Buffer.from(originalBase64Data, "base64");
+
+    const originalFileMetadata = {
+      name: `image_${orderID}_Original.jpg`,
+      parents: [folderId],
+    };
+
+    const originalMedia = {
+      mimeType: "image/jpeg",
+      body: require("stream").Readable.from([originalImageBuffer]),
+    };
+
+    const originalFile = await driveClient.files.create({
+      requestBody: originalFileMetadata,
+      media: originalMedia,
       fields: "id, webViewLink",
     });
 
@@ -130,6 +179,8 @@ app.post("/add-border", async (req, res) => {
       border_size,
       fileId: file.data.id,
       viewLink: file.data.webViewLink,
+      originalFileId: originalFile.data.id,
+      originalViewLink: originalFile.data.webViewLink,
     });
   } catch (error) {
     console.error("Error processing image:", error);
