@@ -105,11 +105,12 @@ app.post("/add-border", async (req, res) => {
     let processedImageBuffer;
 
     if (border_size === 0) {
-      // If border_size is 0, just convert to JPEG without adding border
+      // If border_size is 0, maintain original quality and size
       processedImageBuffer = await sharp(imageBuffer)
         .jpeg({
           quality: 100,
-          mozjpeg: true,
+          chromaSubsampling: "4:4:4", // Prevent color quality loss
+          force: true, // Ensure JPEG output
         })
         .toBuffer();
     } else {
@@ -132,7 +133,8 @@ app.post("/add-border", async (req, res) => {
         ])
         .jpeg({
           quality: 100,
-          mozjpeg: true,
+          chromaSubsampling: "4:4:4", // Prevent color quality loss
+          force: true, // Ensure JPEG output
         })
         .toBuffer();
     }
@@ -155,7 +157,7 @@ app.post("/add-border", async (req, res) => {
       fields: "id, webViewLink",
     });
 
-    // Upload original image
+    // Upload original image without any processing
     const originalBase64Data = originalbase64Image.replace(
       /^data:image\/\w+;base64,/,
       ""
@@ -163,13 +165,13 @@ app.post("/add-border", async (req, res) => {
     const originalImageBuffer = Buffer.from(originalBase64Data, "base64");
 
     const originalFileMetadata = {
-      name: `${orderID}_Original.jpg`,
+      name: `image_${orderID}_Original.jpg`,
       parents: [folderId],
     };
 
     const originalMedia = {
       mimeType: "image/jpeg",
-      body: require("stream").Readable.from([originalImageBuffer]),
+      body: Buffer.from(originalBase64Data, "base64"), // Direct buffer upload without Sharp processing
     };
 
     const originalFile = await driveClient.files.create({
