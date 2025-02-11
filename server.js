@@ -171,7 +171,7 @@ app.post("/add-border", async (req, res) => {
 
     const originalMedia = {
       mimeType: "image/jpeg",
-      body: Buffer.from(originalBase64Data, "base64"), // Direct buffer upload without Sharp processing
+      body: require("stream").Readable.from([originalImageBuffer]), // Convert buffer to readable stream
     };
 
     const originalFile = await driveClient.files.create({
