@@ -96,7 +96,7 @@ app.post("/add-border", async (req, res) => {
         .json({ error: "border_size must be between 0 and 100" });
     }
 
-    const borderColor = border_color || "#000000"; // Default to black if falsy
+    const borderColor = border_color || "#ffffff"; // Default to white if falsy
     const borderRGBA = hexToRGBA(borderColor); // Convert hex to RGBA
 
     const base64Data = image_base64.replace(/^data:image\/\w+;base64,/, "");
