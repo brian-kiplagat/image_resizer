@@ -96,7 +96,10 @@ app.post("/add-border", async (req, res) => {
         .json({ error: "border_size must be between 0 and 100" });
     }
 
-    const base64Data = originalBase64Data.replace(/^data:image\/\w+;base64,/, "");
+    const base64Data = originalbase64Image.replace(
+      /^data:image\/\w+;base64,/,
+      ""
+    );
     const imageBuffer = Buffer.from(base64Data, "base64");
 
     let processedImageBuffer;
