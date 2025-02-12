@@ -103,21 +103,14 @@ app.post("/add-border", async (req, res) => {
 
     // Skip border processing if border_size is 0 or border_color is falsy
     if (border_size === 0 || !border_color) {
-      processedImageBuffer = await sharp(imageBuffer)
-        .jpeg({
-          quality: 100,
-          chromaSubsampling: "4:4:4", // Prevent color quality loss
-          force: true, // Ensure JPEG output
-        })
-        .toBuffer();
+      // Just pass through the original image without any processing
+      processedImageBuffer = imageBuffer;
     } else {
       const borderRGBA = hexToRGBA(border_color);
-      // Get original image dimensions
       const metadata = await sharp(imageBuffer).metadata();
       const newWidth = metadata.width + border_size * 2;
       const newHeight = metadata.height + border_size * 2;
 
-      // Create a new image with a border
       processedImageBuffer = await sharp({
         create: {
           width: newWidth,
@@ -131,8 +124,8 @@ app.post("/add-border", async (req, res) => {
         ])
         .jpeg({
           quality: 100,
-          chromaSubsampling: "4:4:4", // Prevent color quality loss
-          force: true, // Ensure JPEG output
+          chromaSubsampling: "4:4:4",
+          force: true,
         })
         .toBuffer();
     }
