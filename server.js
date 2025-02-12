@@ -96,16 +96,13 @@ app.post("/add-border", async (req, res) => {
         .json({ error: "border_size must be between 0 and 100" });
     }
 
-    const borderColor = border_color || "#ffffff"; // Default to white if falsy
-    const borderRGBA = hexToRGBA(borderColor); // Convert hex to RGBA
-
     const base64Data = image_base64.replace(/^data:image\/\w+;base64,/, "");
     const imageBuffer = Buffer.from(base64Data, "base64");
 
     let processedImageBuffer;
 
-    if (border_size === 0) {
-      // If border_size is 0, maintain original quality and size
+    // Skip border processing if border_size is 0 or border_color is falsy
+    if (border_size === 0 || !border_color) {
       processedImageBuffer = await sharp(imageBuffer)
         .jpeg({
           quality: 100,
@@ -114,6 +111,7 @@ app.post("/add-border", async (req, res) => {
         })
         .toBuffer();
     } else {
+      const borderRGBA = hexToRGBA(border_color);
       // Get original image dimensions
       const metadata = await sharp(imageBuffer).metadata();
       const newWidth = metadata.width + border_size * 2;
