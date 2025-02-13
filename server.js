@@ -336,6 +336,14 @@ const formatCustomerName = (shipping, billing) => {
   return [firstName, lastName].filter(Boolean).join(" ") || "Guest";
 };
 
+// Get filenames for modified and original images
+const getImageFilenames = (orderId) => {
+  return {
+    modified: `${orderId}_Modified.jpg`,
+    original: `${orderId}_Original.jpg`,
+  };
+};
+
 app.post("/confirm-order", async (req, res) => {
   try {
     const { id } = req.body;
@@ -352,15 +360,15 @@ app.post("/confirm-order", async (req, res) => {
 
     const order = orderResponse.data;
     const paperDetails = getPaperDetails(order.meta_data);
-    const imageLink = getImageLink(order.line_items);
+    const imageFiles = getImageFilenames(order.number);
     const customerName = formatCustomerName(order.shipping, order.billing);
     const shippingAddress = formatShippingAddress(order.shipping);
 
-    // Log to Google Sheets with all requested information
+    // Log to Google Sheets with filenames instead of image link
     const currentDate = new Date().toISOString();
     await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
-      range: "Sheet1!A:J", // Extended range for all columns
+      range: "Sheet1!A:K", // Extended range to include both filenames
       valueInputOption: "USER_ENTERED",
       resource: {
         values: [
@@ -371,7 +379,8 @@ app.post("/confirm-order", async (req, res) => {
             paperDetails.paperSize, // Paper size
             paperDetails.borderSize, // Border size
             paperDetails.orientation, // Orientation
-            imageLink, // Link to print image
+            imageFiles.modified, // Modified image filename
+            imageFiles.original, // Original image filename
             customerName, // Customer name
             shippingAddress, // Shipping address
             order.status, // Order status
@@ -380,7 +389,7 @@ app.post("/confirm-order", async (req, res) => {
       },
     });
 
-    console.log(`Order ${order.number} logged to spreadsheet with all details`);
+    console.log(`Order ${order.number} logged to spreadsheet with filenames`);
 
     // Check if payment was successful
     if (order.status === "processing" || order.status === "completed") {
