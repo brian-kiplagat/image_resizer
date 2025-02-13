@@ -64,7 +64,8 @@ const PAPER_SIZES = {
 };
 
 // Add this near your other environment variables
-const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID; // You'll need to add this to your .env file
+const SPREADSHEET_ID =
+  process.env.GOOGLE_SHEET_ID || "1xEVqnwi6351iN3zutJ_V_xuRU6FVBkOGjAwbU3iKics"; // You'll need to add this to your .env file
 
 // API route to add border to base64 image
 app.post("/add-border", async (req, res) => {
