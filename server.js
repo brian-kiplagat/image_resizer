@@ -297,6 +297,45 @@ const WOO_BASE_URL = process.env.WOO_BASE_URL;
 const WOO_CONSUMER_KEY = process.env.WOO_CONSUMER_KEY;
 const WOO_CONSUMER_SECRET = process.env.WOO_CONSUMER_SECRET;
 
+// Extract paper details from meta_data
+const getPaperDetails = (metaData) => {
+  return {
+    paperSize: metaData.find((m) => m.key === "paper_size")?.value || "",
+    paperType: metaData.find((m) => m.key === "paper_type")?.value || "",
+    borderSize: metaData.find((m) => m.key === "border_size")?.value || "",
+    orientation: metaData.find((m) => m.key === "orientation")?.value || "",
+  };
+};
+
+// Get image link from line items
+const getImageLink = (lineItems) => {
+  return lineItems[0]?.image?.src || "";
+};
+
+// Format shipping address
+const formatShippingAddress = (shipping) => {
+  const parts = [
+    shipping.first_name,
+    shipping.last_name,
+    shipping.address_1,
+    shipping.address_2,
+    shipping.city,
+    shipping.state,
+    shipping.postcode,
+    shipping.country,
+  ].filter(Boolean); // Remove empty values
+
+  return parts.join(", ");
+};
+
+// Format customer name
+const formatCustomerName = (shipping, billing) => {
+  // Try shipping name first, then billing name
+  const firstName = shipping.first_name || billing.first_name || "";
+  const lastName = shipping.last_name || billing.last_name || "";
+  return [firstName, lastName].filter(Boolean).join(" ") || "Guest";
+};
+
 app.post("/confirm-order", async (req, res) => {
   try {
     const { id } = req.body;
@@ -312,18 +351,36 @@ app.post("/confirm-order", async (req, res) => {
     });
 
     const order = orderResponse.data;
+    const paperDetails = getPaperDetails(order.meta_data);
+    const imageLink = getImageLink(order.line_items);
+    const customerName = formatCustomerName(order.shipping, order.billing);
+    const shippingAddress = formatShippingAddress(order.shipping);
 
-    // Log key order information
-    const orderInfo = {
-      orderId: order.id,
-      status: order.status,
-      total: `${order.currency_symbol}${order.total}`,
-      currency: order.currency,
-      paymentMethod: order.payment_method_title,
-      dateCreated: order.date_created,
-    };
+    // Log to Google Sheets with all requested information
+    const currentDate = new Date().toISOString();
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID,
+      range: "Sheet1!A:J", // Extended range for all columns
+      valueInputOption: "USER_ENTERED",
+      resource: {
+        values: [
+          [
+            order.date_created, // Order date
+            order.number, // Order number
+            paperDetails.paperType, // Paper type
+            paperDetails.paperSize, // Paper size
+            paperDetails.borderSize, // Border size
+            paperDetails.orientation, // Orientation
+            imageLink, // Link to print image
+            customerName, // Customer name
+            shippingAddress, // Shipping address
+            order.status, // Order status
+          ],
+        ],
+      },
+    });
 
-    console.log("Order Information:", orderInfo);
+    console.log(`Order ${order.number} logged to spreadsheet with all details`);
 
     // Check if payment was successful
     if (order.status === "processing" || order.status === "completed") {
@@ -348,25 +405,6 @@ app.post("/confirm-order", async (req, res) => {
 
           console.log(`Moved file ${file.name} to confirmed folder`);
         }
-        // Log to Google Sheets with additional information
-        const currentDate = new Date().toISOString();
-        await sheets.spreadsheets.values.append({
-          spreadsheetId: SPREADSHEET_ID,
-          range: "Sheet1!A:F", // Extended range to include more columns
-          valueInputOption: "USER_ENTERED",
-          resource: {
-            values: [
-              [
-                currentDate,
-                id,
-                "Order Confirmed",
-                `${order.currency_symbol}${order.total}`,
-                order.payment_method_title,
-                order.status,
-              ],
-            ],
-          },
-        });
         return res.status(200).json({
           message: "Order is confirmed and files moved!",
           order,
