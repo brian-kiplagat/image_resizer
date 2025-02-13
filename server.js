@@ -24,7 +24,10 @@ app.use(bodyParser.json({ limit: "10mb" })); // Increase payload limit for large
 
 // Add Google Drive authentication configuration
 const KEYFILEPATH = path.join(__dirname, "keys.json");
-const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
+const SCOPES = [
+  "https://www.googleapis.com/auth/drive.file",
+  "https://www.googleapis.com/auth/spreadsheets",
+];
 const folderId =
   process.env.GOOGLE_DRIVE_FOLDER_ID || "1mD8gu8bm420siEPI9enGKqKfyP5Svi2h";
 const confirmedFolderId =
@@ -47,6 +50,7 @@ const auth = new google.auth.GoogleAuth({
 
 // Create Google Drive client
 const driveClient = google.drive({ version: "v3", auth });
+const sheets = google.sheets({ version: "v4", auth });
 
 // Add paper size dimensions (in pixels at 300 DPI)
 const PAPER_SIZES = {
@@ -58,6 +62,9 @@ const PAPER_SIZES = {
   A5: { width: 1748, height: 2480 },
   A6: { width: 1240, height: 1748 },
 };
+
+// Add this near your other environment variables
+const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID; // You'll need to add this to your .env file
 
 // API route to add border to base64 image
 app.post("/add-border", async (req, res) => {
@@ -328,6 +335,19 @@ app.post("/confirm-order", async (req, res) => {
 
           console.log(`Moved file ${file.name} to confirmed folder`);
         }
+
+        // Log to Google Sheets
+        const currentDate = new Date().toISOString();
+        await sheets.spreadsheets.values.append({
+          spreadsheetId: SPREADSHEET_ID,
+          range: "Sheet1!A:C", // Adjust range as needed
+          valueInputOption: "USER_ENTERED",
+          resource: {
+            values: [[currentDate, id, "Order Confirmed"]],
+          },
+        });
+
+        console.log(`Logged order ${id} confirmation to Google Sheets`);
 
         return res.status(200).json({
           message: "Order is confirmed and files moved!",
