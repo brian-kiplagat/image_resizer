@@ -43,6 +43,17 @@ const auth = new google.auth.GoogleAuth({
 // Create Google Drive client
 const driveClient = google.drive({ version: "v3", auth });
 
+// Add paper size dimensions (in pixels at 300 DPI)
+const PAPER_SIZES = {
+  A0: { width: 9933, height: 14043 },
+  A1: { width: 7016, height: 9933 },
+  A2: { width: 4961, height: 7016 },
+  A3: { width: 3508, height: 4961 },
+  A4: { width: 2480, height: 3508 },
+  A5: { width: 1748, height: 2480 },
+  A6: { width: 1240, height: 1748 },
+};
+
 // API route to add border to base64 image
 app.post("/add-border", async (req, res) => {
   try {
@@ -54,6 +65,8 @@ app.post("/add-border", async (req, res) => {
       border_color,
       orientation,
       orderID,
+      paperSize,
+      resizeOption,
     } = req.body;
 
     // Check if required fields are present and valid
@@ -63,6 +76,14 @@ app.post("/add-border", async (req, res) => {
     //check if orderID is present and valid
     if (!orderID || typeof orderID !== "string") {
       return res.status(400).json({ error: "Invalid or missing orderID" });
+    }
+    //check if paperSize is present and valid
+    if (!paperSize || typeof paperSize !== "string") {
+      return res.status(400).json({ error: "Invalid or missing paperSize" });
+    }
+    //check if resizeOption is present and valid
+    if (!resizeOption || typeof resizeOption !== "string") {
+      return res.status(400).json({ error: "Invalid or missing resizeOption" });
     }
 
     if (!originalbase64Image || typeof originalbase64Image !== "string") {
@@ -104,13 +125,63 @@ app.post("/add-border", async (req, res) => {
 
     let processedImageBuffer;
 
+    // Get paper dimensions based on orientation
+    const paperDims = PAPER_SIZES[paperSize];
+    if (!paperDims) {
+      return res
+        .status(400)
+        .json({ error: "Invalid paper size. Must be between A0 and A6" });
+    }
+
+    // Set dimensions based on orientation
+    const targetWidth =
+      orientation === "Landscape" ? paperDims.height : paperDims.width;
+    const targetHeight =
+      orientation === "Landscape" ? paperDims.width : paperDims.height;
+
+    // First resize the image according to paper size and resize option
+    let resizedImage = sharp(imageBuffer);
+
+    switch (resizeOption) {
+      case "cover":
+        resizedImage = resizedImage.resize(targetWidth, targetHeight, {
+          fit: "cover",
+        });
+        break;
+      case "contain":
+        resizedImage = resizedImage.resize(targetWidth, targetHeight, {
+          fit: "contain",
+          background: { r: 255, g: 255, b: 255, alpha: 1 },
+        });
+        break;
+      case "fill":
+        resizedImage = resizedImage.resize(targetWidth, targetHeight, {
+          fit: "fill",
+        });
+        break;
+      case "inside":
+        resizedImage = resizedImage.resize(targetWidth, targetHeight, {
+          fit: "inside",
+        });
+        break;
+      case "outside":
+        resizedImage = resizedImage.resize(targetWidth, targetHeight, {
+          fit: "outside",
+        });
+        break;
+      default:
+        return res.status(400).json({ error: "Invalid resize option" });
+    }
+
+    // Get the resized buffer
+    const resizedBuffer = await resizedImage.toBuffer();
+
     // Skip border processing if border_size is 0 or border_color is falsy
     if (border_size === 0 || !border_color) {
-      // Just pass through the original image without any processing
-      processedImageBuffer = imageBuffer;
+      processedImageBuffer = resizedBuffer;
     } else {
       const borderRGBA = hexToRGBA(border_color);
-      const metadata = await sharp(imageBuffer).metadata();
+      const metadata = await sharp(resizedBuffer).metadata();
       const newWidth = metadata.width + border_size * 2;
       const newHeight = metadata.height + border_size * 2;
 
@@ -123,7 +194,7 @@ app.post("/add-border", async (req, res) => {
         },
       })
         .composite([
-          { input: imageBuffer, top: border_size, left: border_size },
+          { input: resizedBuffer, top: border_size, left: border_size },
         ])
         .jpeg({
           quality: 100,
