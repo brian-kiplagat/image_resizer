@@ -364,33 +364,6 @@ app.post("/confirm-order", async (req, res) => {
     const customerName = formatCustomerName(order.shipping, order.billing);
     const shippingAddress = formatShippingAddress(order.shipping);
 
-    // Log to Google Sheets with correct column order
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: SPREADSHEET_ID,
-      range: "Sheet1!A:J",
-      valueInputOption: "USER_ENTERED",
-      resource: {
-        values: [
-          [
-            order.date_created, // Order date
-            order.number, // Order number
-            order.status, // Status
-            paperDetails.paperType, // Paper type
-            paperDetails.paperSize, // Paper size
-            paperDetails.borderSize, // Border size
-            paperDetails.orientation, // Orientation
-            imageFiles.modified, // Link to print image (modified filename)
-            customerName, // Customer name
-            shippingAddress, // Shipping address
-          ],
-        ],
-      },
-    });
-
-    console.log(
-      `Order ${order.number} logged to spreadsheet in specified order`
-    );
-
     // Check if payment was successful
     if (order.status === "processing" || order.status === "completed") {
       try {
@@ -414,6 +387,34 @@ app.post("/confirm-order", async (req, res) => {
 
           console.log(`Moved file ${file.name} to confirmed folder`);
         }
+
+        // Log to Google Sheets with correct column order
+        await sheets.spreadsheets.values.append({
+          spreadsheetId: SPREADSHEET_ID,
+          range: "Sheet1!A:J",
+          valueInputOption: "USER_ENTERED",
+          resource: {
+            values: [
+              [
+                order.date_created, // Order date
+                order.number, // Order number
+                order.status, // Status
+                paperDetails.paperType, // Paper type
+                paperDetails.paperSize, // Paper size
+                paperDetails.borderSize, // Border size
+                paperDetails.orientation, // Orientation
+                imageFiles.modified, // Link to print image (modified filename)
+                customerName, // Customer name
+                shippingAddress, // Shipping address
+              ],
+            ],
+          },
+        });
+
+        console.log(
+          `Order ${order.number} logged to spreadsheet in specified order`
+        );
+
         return res.status(200).json({
           message: "Order is confirmed and files moved!",
           order,
