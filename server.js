@@ -268,7 +268,7 @@ app.post("/confirm-order", async (req, res) => {
     const { id } = req.body;
 
     // Validate order ID
-    if (!id || typeof id !== "string") {
+    if (!id || typeof id !== "number") {
       return res.status(400).json({ error: "Invalid or missing order ID" });
     }
 
