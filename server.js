@@ -27,6 +27,9 @@ const KEYFILEPATH = path.join(__dirname, "keys.json");
 const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
 const folderId =
   process.env.GOOGLE_DRIVE_FOLDER_ID || "1mD8gu8bm420siEPI9enGKqKfyP5Svi2h";
+const confirmedFolderId =
+  process.env.GOOGLE_DRIVE_CONFIRMED_FOLDER_ID ||
+  "1t7kUVD3Y3LK3ofNYJDL9zTKxfigUdsvA";
 
 // Read credentials directly from the file
 let credentials;
@@ -208,7 +211,7 @@ app.post("/add-border", async (req, res) => {
 
     // Upload to Google Drive
     const fileMetadata = {
-      name: `${orderID}_Modified_${Date.now()}.jpg`,
+      name: `${orderID}_Modified.jpg`,
       parents: [folderId],
     };
 
@@ -232,7 +235,7 @@ app.post("/add-border", async (req, res) => {
     const originalImageBuffer = Buffer.from(originalBase64Data, "base64");
 
     const originalFileMetadata = {
-      name: `image_${orderID}_Original.jpg`,
+      name: `${orderID}_Original.jpg`,
       parents: [folderId],
     };
 
