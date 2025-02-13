@@ -313,6 +313,18 @@ app.post("/confirm-order", async (req, res) => {
 
     const order = orderResponse.data;
 
+    // Log key order information
+    const orderInfo = {
+      orderId: order.id,
+      status: order.status,
+      total: `${order.currency_symbol}${order.total}`,
+      currency: order.currency,
+      paymentMethod: order.payment_method_title,
+      dateCreated: order.date_created,
+    };
+
+    console.log("Order Information:", orderInfo);
+
     // Check if payment was successful
     if (order.status === "processing" || order.status === "completed") {
       try {
@@ -336,20 +348,25 @@ app.post("/confirm-order", async (req, res) => {
 
           console.log(`Moved file ${file.name} to confirmed folder`);
         }
-
-        // Log to Google Sheets
+        // Log to Google Sheets with additional information
         const currentDate = new Date().toISOString();
         await sheets.spreadsheets.values.append({
           spreadsheetId: SPREADSHEET_ID,
-          range: "Sheet1!A:C", // Adjust range as needed
+          range: "Sheet1!A:F", // Extended range to include more columns
           valueInputOption: "USER_ENTERED",
           resource: {
-            values: [[currentDate, id, "Order Confirmed"]],
+            values: [
+              [
+                currentDate,
+                id,
+                "Order Confirmed",
+                `${order.currency_symbol}${order.total}`,
+                order.payment_method_title,
+                order.status,
+              ],
+            ],
           },
         });
-
-        console.log(`Logged order ${id} confirmation to Google Sheets`);
-
         return res.status(200).json({
           message: "Order is confirmed and files moved!",
           order,
@@ -370,9 +387,10 @@ app.post("/confirm-order", async (req, res) => {
     }
   } catch (error) {
     console.error("Error confirming order:", error);
-    res
-      .status(500)
-      .json({ error: "Failed to confirm order.", reason: error.message });
+    res.status(500).json({
+      error: "Failed to confirm order.",
+      reason: error.message,
+    });
   }
 });
 
