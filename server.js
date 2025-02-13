@@ -263,8 +263,8 @@ app.post("/add-border", async (req, res) => {
     res.status(500).json({ error: "Failed to process image.", reason: error });
   }
 });
-const WOO_BASE_URL = process.env.WOO_BASE_URL; 
-const WOO_CONSUMER_KEY = process.env.WOO_CONSUMER_KEY; 
+const WOO_BASE_URL = process.env.WOO_BASE_URL;
+const WOO_CONSUMER_KEY = process.env.WOO_CONSUMER_KEY;
 const WOO_CONSUMER_SECRET = process.env.WOO_CONSUMER_SECRET;
 
 app.post("/confirm-order", async (req, res) => {
@@ -285,14 +285,45 @@ app.post("/confirm-order", async (req, res) => {
 
     // Check if payment was successful
     if (order.status === "processing" || order.status === "completed") {
-      return res.status(200).json({ message: "Order is confirmed!", order });
-    } else {
-      return res
-        .status(400)
-        .json({
-          error: "Payment not completed or order not confirmed.",
-          status: order.status,
+      try {
+        // List files in the original folder to find the order's files
+        const response = await driveClient.files.list({
+          q: `'${folderId}' in parents and name contains '${id}'`,
+          fields: "files(id, name)",
         });
+
+        const files = response.data.files;
+
+        // Move each file to the confirmed folder
+        for (const file of files) {
+          // Update the file's parent folder
+          await driveClient.files.update({
+            fileId: file.id,
+            addParents: confirmedFolderId,
+            removeParents: folderId,
+            fields: "id, parents",
+          });
+
+          console.log(`Moved file ${file.name} to confirmed folder`);
+        }
+
+        return res.status(200).json({
+          message: "Order is confirmed and files moved!",
+          order,
+          movedFiles: files.map((f) => f.name),
+        });
+      } catch (error) {
+        console.error("Error moving files:", error);
+        return res.status(500).json({
+          error: "Failed to move files to confirmed folder",
+          reason: error.message,
+        });
+      }
+    } else {
+      return res.status(400).json({
+        error: "Payment not completed or order not confirmed.",
+        status: order.status,
+      });
     }
   } catch (error) {
     console.error("Error confirming order:", error);
@@ -301,7 +332,6 @@ app.post("/confirm-order", async (req, res) => {
       .json({ error: "Failed to confirm order.", reason: error.message });
   }
 });
-
 
 // Convert hex to RGBA (Sharp requires an array format)
 function hexToRGBA(hex) {
