@@ -44,8 +44,9 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           script: |
             cd ~/image_resizer
-            # Ensure the credentials are written as proper JSON
+            # Create credentials files
             echo '${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}' > keys.json
+            echo '${{ secrets.ENV_PRODUCTION }}' > .env
             npm uninstall sharp
             npm install --os=linux --cpu=x64 sharp
             npm install --production

@@ -5,6 +5,7 @@ const cors = require("cors");
 const { google } = require("googleapis");
 const path = require("path");
 const fs = require("fs");
+require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -258,6 +259,45 @@ app.post("/add-border", async (req, res) => {
     res.status(500).json({ error: "Failed to process image.", reason: error });
   }
 });
+const WOO_BASE_URL = process.env.WOO_BASE_URL; 
+const WOO_CONSUMER_KEY = process.env.WOO_CONSUMER_KEY; 
+const WOO_CONSUMER_SECRET = process.env.WOO_CONSUMER_SECRET;
+
+app.post("/confirm-order", async (req, res) => {
+  try {
+    const { id } = req.body;
+
+    // Validate order ID
+    if (!id || typeof id !== "string") {
+      return res.status(400).json({ error: "Invalid or missing order ID" });
+    }
+
+    // Fetch order details from WooCommerce
+    const orderResponse = await axios.get(`${WOO_BASE_URL}/${id}`, {
+      auth: { username: WOO_CONSUMER_KEY, password: WOO_CONSUMER_SECRET },
+    });
+
+    const order = orderResponse.data;
+
+    // Check if payment was successful
+    if (order.status === "processing" || order.status === "completed") {
+      return res.status(200).json({ message: "Order is confirmed!", order });
+    } else {
+      return res
+        .status(400)
+        .json({
+          error: "Payment not completed or order not confirmed.",
+          status: order.status,
+        });
+    }
+  } catch (error) {
+    console.error("Error confirming order:", error);
+    res
+      .status(500)
+      .json({ error: "Failed to confirm order.", reason: error.message });
+  }
+});
+
 
 // Convert hex to RGBA (Sharp requires an array format)
 function hexToRGBA(hex) {
