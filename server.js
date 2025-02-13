@@ -72,6 +72,8 @@ app.post("/add-border", async (req, res) => {
       orderID,
       paperSize,
       resizeOption,
+      isCustom,
+      sizes,
     } = req.body;
 
     // Check if required fields are present and valid
@@ -89,6 +91,18 @@ app.post("/add-border", async (req, res) => {
     //check if resizeOption is present and valid
     if (!resizeOption || typeof resizeOption !== "string") {
       return res.status(400).json({ error: "Invalid or missing resizeOption" });
+    }
+    //check if isCustom is true, then sizes must be present and valid
+    if (isCustom) {
+      //check if sizes is proper format
+      if (
+        !sizes.width ||
+        !sizes.height ||
+        typeof sizes.width !== "number" ||
+        typeof sizes.height !== "number"
+      ) {
+        return res.status(400).json({ error: "Invalid or missing sizes" });
+      }
     }
 
     if (!originalbase64Image || typeof originalbase64Image !== "string") {
@@ -130,12 +144,20 @@ app.post("/add-border", async (req, res) => {
 
     let processedImageBuffer;
 
-    // Get paper dimensions based on orientation
-    const paperDims = PAPER_SIZES[paperSize];
-    if (!paperDims) {
-      return res
-        .status(400)
-        .json({ error: "Invalid paper size. Must be between A0 and A6" });
+    // Get paper dimensions based on orientation and custom sizes
+    let paperDims;
+    if (isCustom && sizes) {
+      paperDims = {
+        width: sizes.width,
+        height: sizes.height,
+      };
+    } else {
+      paperDims = PAPER_SIZES[paperSize];
+      if (!paperDims) {
+        return res
+          .status(400)
+          .json({ error: "Invalid paper size. Must be between A0 and A6" });
+      }
     }
 
     // Set dimensions based on orientation
