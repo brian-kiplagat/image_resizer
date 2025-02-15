@@ -52,23 +52,24 @@ const auth = new google.auth.GoogleAuth({
 const driveClient = google.drive({ version: "v3", auth });
 const sheets = google.sheets({ version: "v4", auth });
 
-// Add paper size dimensions (in pixels at 300 DPI)
+// Add paper size dimensions (in pixels at 600 DPI)
 const PAPER_SIZES = {
-  A0: { width: 9933, height: 14043 },
-  A1: { width: 7016, height: 9933 },
-  A2: { width: 4961, height: 7016 },
-  A3: { width: 3508, height: 4961 },
-  A4: { width: 2480, height: 3508 },
-  A5: { width: 1748, height: 2480 },
-  A6: { width: 1240, height: 1748 },
-  // B series (in pixels at 300 DPI)
-  B0: { width: 11811, height: 16717 },
-  B1: { width: 8358, height: 11811 },
-  B2: { width: 5906, height: 8358 },
-  B3: { width: 4179, height: 5906 },
-  B4: { width: 2953, height: 4179 },
-  B5: { width: 2079, height: 2953 },
-  B6: { width: 1476, height: 2079 },
+  // A series (in pixels at 600 DPI)
+  A0: { width: 19866, height: 28086 },
+  A1: { width: 14032, height: 19866 },
+  A2: { width: 9922, height: 14032 },
+  A3: { width: 7016, height: 9922 },
+  A4: { width: 4960, height: 7016 },
+  A5: { width: 3496, height: 4960 },
+  A6: { width: 2480, height: 3496 },
+  // B series (in pixels at 600 DPI)
+  B0: { width: 23622, height: 33434 },
+  B1: { width: 16716, height: 23622 },
+  B2: { width: 11812, height: 16716 },
+  B3: { width: 8358, height: 11812 },
+  B4: { width: 5906, height: 8358 },
+  B5: { width: 4158, height: 5906 },
+  B6: { width: 2952, height: 4158 },
 };
 
 // Add this near your other environment variables
