@@ -95,9 +95,11 @@ app.post("/add-border", async (req, res) => {
     if (!orderID || typeof orderID !== "string") {
       return res.status(400).json({ error: "Invalid or missing orderID" });
     }
-    //check if paperSize is present and valid
-    if (!paperSize || typeof paperSize !== "string") {
-      return res.status(400).json({ error: "Invalid or missing paperSize" });
+    //check if paperSize is present and valid -- only check when iscustom is false
+    if (!isCustom) {
+      if (!paperSize || typeof paperSize !== "string") {
+        return res.status(400).json({ error: "Invalid or missing paperSize" });
+      }
     }
     //check if resizeOption is present and valid
     if (!resizeOption || typeof resizeOption !== "string") {
