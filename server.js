@@ -72,7 +72,6 @@ app.post("/add-border", async (req, res) => {
   try {
     // Validate request with detailed error messages
     const {
-      image_base64,
       originalbase64Image,
       border_size,
       border_color,
@@ -84,10 +83,6 @@ app.post("/add-border", async (req, res) => {
       sizes,
     } = req.body;
 
-    // Check if required fields are present and valid
-    if (!image_base64 || typeof image_base64 !== "string") {
-      return res.status(400).json({ error: "Invalid or missing image_base64" });
-    }
     //check if orderID is present and valid
     if (!orderID || typeof orderID !== "string") {
       return res.status(400).json({ error: "Invalid or missing orderID" });
@@ -117,12 +112,6 @@ app.post("/add-border", async (req, res) => {
       return res
         .status(400)
         .json({ error: "Invalid or missing originalbase64Image" });
-    }
-    //ensure image is rquired types eg png, jpg, jpeg, etc
-    if (!image_base64.startsWith("data:image/")) {
-      return res
-        .status(400)
-        .json({ error: "Invalid image format. Must start with 'data:image/'" });
     }
 
     if (!orientation || !["Portrait", "Landscape"].includes(orientation)) {
