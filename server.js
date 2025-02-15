@@ -61,6 +61,14 @@ const PAPER_SIZES = {
   A4: { width: 2480, height: 3508 },
   A5: { width: 1748, height: 2480 },
   A6: { width: 1240, height: 1748 },
+  // B series (in pixels at 300 DPI)
+  B0: { width: 11811, height: 16717 },
+  B1: { width: 8358, height: 11811 },
+  B2: { width: 5906, height: 8358 },
+  B3: { width: 4179, height: 5906 },
+  B4: { width: 2953, height: 4179 },
+  B5: { width: 2079, height: 2953 },
+  B6: { width: 1476, height: 2079 },
 };
 
 // Add this near your other environment variables
@@ -151,9 +159,9 @@ app.post("/add-border", async (req, res) => {
     } else {
       paperDims = PAPER_SIZES[paperSize];
       if (!paperDims) {
-        return res
-          .status(400)
-          .json({ error: "Invalid paper size. Must be between A0 and A6" });
+        return res.status(400).json({
+          error: "Invalid paper size. Must be between A0-A6 or B0-B6",
+        });
       }
     }
 
