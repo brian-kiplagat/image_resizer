@@ -133,7 +133,7 @@ app.post("/add-border", async (req, res) => {
     }
 
     // Validate border_size
-    if (border_size === undefined || typeof border_size !== "number") {
+    if (border_size === undefined || border_size === null) {
       return res
         .status(400)
         .json({ error: "border_size is required and must be a number" });
