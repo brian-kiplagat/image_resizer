@@ -109,7 +109,7 @@ async function convertPdfBase64ToImageBase64(pdfBase64) {
       jpeg: {
         quality: 100,
       },
-      density: 600, // Match your 600 DPI requirement
+      density: 300, // Match your 600 DPI requirement
     };
 
     // Convert PDF to image
