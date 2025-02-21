@@ -6,6 +6,8 @@ const { google } = require("googleapis");
 const path = require("path");
 const fs = require("fs");
 const axios = require("axios");
+const fsPromises = require("fs").promises;
+const poppler = require("pdf-poppler");
 require("dotenv").config();
 
 const app = express();
@@ -76,6 +78,58 @@ const PAPER_SIZES = {
 const SPREADSHEET_ID =
   process.env.GOOGLE_SHEET_ID || "1xEVqnwi6351iN3zutJ_V_xuRU6FVBkOGjAwbU3iKics"; // You'll need to add this to your .env file
 
+// Add the PDF conversion function
+async function convertPdfBase64ToImageBase64(pdfBase64) {
+  try {
+    const uniqueId = Date.now() + "-" + Math.random().toString(36).substr(2, 9);
+    const tempPdfPath = path.join("/tmp", `pdf-${uniqueId}.pdf`);
+    const outputImagePath = path.join("/tmp", `img-${uniqueId}`);
+
+    // Validate input
+    if (!pdfBase64.startsWith("data:application/pdf;base64,")) {
+      throw new Error("Invalid PDF base64 string");
+    }
+
+    // Decode base64 and save PDF
+    const pdfBuffer = Buffer.from(
+      pdfBase64.replace(/^data:application\/pdf;base64,/, ""),
+      "base64"
+    );
+    await fsPromises.writeFile(tempPdfPath, pdfBuffer);
+
+    // Configure poppler options
+    const options = {
+      format: "jpeg",
+      out_dir: path.dirname(outputImagePath),
+      out_prefix: path.basename(outputImagePath),
+      page: 1,
+      jpeg: {
+        quality: 100,
+      },
+      density: 600, // Match your 600 DPI requirement
+    };
+
+    // Convert PDF to image
+    await poppler.convert(tempPdfPath, options);
+
+    // Read generated image
+    const imagePath = `${outputImagePath}-1.jpg`;
+    const imageBuffer = await fsPromises.readFile(imagePath);
+    const imageBase64 = imageBuffer.toString("base64");
+
+    // Clean up temp files
+    await Promise.all([
+      fsPromises.unlink(tempPdfPath),
+      fsPromises.unlink(imagePath),
+    ]);
+
+    return `data:image/jpeg;base64,${imageBase64}`;
+  } catch (error) {
+    console.error("Error converting PDF to image:", error);
+    return null;
+  }
+}
+
 // API route to add border to base64 image
 app.post("/add-border", async (req, res) => {
   try {
@@ -144,10 +198,23 @@ app.post("/add-border", async (req, res) => {
         .json({ error: "border_size must be between 0 and 100" });
     }
 
-    const base64Data = originalbase64Image.replace(
-      /^data:image\/\w+;base64,/,
-      ""
-    );
+    let base64Image = originalbase64Image;
+
+    // If the input is a PDF, convert it to an image
+    if (originalbase64Image.includes("data:application/pdf;base64,")) {
+      const convertedImage = await convertPdfBase64ToImageBase64(
+        originalbase64Image
+      );
+      if (!convertedImage) {
+        return res
+          .status(500)
+          .json({ error: "Failed to convert PDF to image" });
+      }
+      base64Image = convertedImage;
+    }
+
+    // Use the converted image or original image
+    const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
     const imageBuffer = Buffer.from(base64Data, "base64");
 
     let processedImageBuffer;
