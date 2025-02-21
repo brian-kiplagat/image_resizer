@@ -85,16 +85,19 @@ async function convertPdfBase64ToImageBase64(pdfBase64) {
     const tempPdfPath = path.join("/tmp", `pdf-${uniqueId}.pdf`);
     const outputImagePath = path.join("/tmp", `img-${uniqueId}`);
 
-    // Validate input
-    if (!pdfBase64.startsWith("data:application/pdf;base64,")) {
+    // Update validation to handle multiple PDF base64 prefixes
+    if (!pdfBase64.includes(";base64,")) {
+      throw new Error("Invalid PDF base64 string");
+    }
+
+    // Extract base64 data after any valid prefix
+    const base64Data = pdfBase64.split(";base64,")[1];
+    if (!base64Data) {
       throw new Error("Invalid PDF base64 string");
     }
 
     // Decode base64 and save PDF
-    const pdfBuffer = Buffer.from(
-      pdfBase64.replace(/^data:application\/pdf;base64,/, ""),
-      "base64"
-    );
+    const pdfBuffer = Buffer.from(base64Data, "base64");
     await fsPromises.writeFile(tempPdfPath, pdfBuffer);
 
     // Configure poppler options
@@ -201,7 +204,7 @@ app.post("/add-border", async (req, res) => {
     let base64Image = originalbase64Image;
 
     // If the input is a PDF, convert it to an image
-    if (originalbase64Image.includes("data:application/pdf;base64,")) {
+    if (originalbase64Image.toLowerCase().includes("pdf;base64,")) {
       const convertedImage = await convertPdfBase64ToImageBase64(
         originalbase64Image
       );
