@@ -7,6 +7,7 @@ const path = require("path");
 const fs = require("fs");
 const axios = require("axios");
 require("dotenv").config();
+const heicConvert = require("heic-convert");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -151,6 +152,9 @@ const getFileInfo = (base64String) => {
     case "application/pdf":
       fileType = "pdf";
       break;
+    case "image/heic":
+      fileType = "heic";
+      break;
     default:
       fileType = "jpg";
   }
@@ -239,6 +243,32 @@ app.post("/add-border", async (req, res) => {
           .json({ error: "Failed to convert PDF to image" });
       }
       base64Image = convertedImage;
+    }
+    // If the input is a HEIC image, convert it to JPEG/PNG
+    else if (originalbase64Image.toLowerCase().includes("heic;base64,")) {
+      try {
+        const heicBuffer = Buffer.from(
+          originalbase64Image.split(";base64,")[1],
+          "base64"
+        );
+
+        // Convert HEIC to JPEG with high quality
+        const convertedBuffer = await heicConvert({
+          buffer: heicBuffer,
+          format: "JPEG", // or 'PNG'
+          quality: 1, // Maximum quality
+        });
+
+        base64Image = `data:image/jpeg;base64,${convertedBuffer.toString(
+          "base64"
+        )}`;
+      } catch (error) {
+        console.error("HEIC conversion error:", error);
+        return res.status(500).json({
+          error: "Failed to convert HEIC to image",
+          details: error.message,
+        });
+      }
     }
 
     // Use the converted image or original image
