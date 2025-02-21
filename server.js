@@ -225,6 +225,7 @@ app.post("/add-border", async (req, res) => {
     // Get paper dimensions based on orientation and custom sizes
     let paperDims;
     if (isCustom && sizes) {
+      resizeOption = "fill"; // Override resize option for custom sizes
       paperDims = {
         width: sizes.width,
         height: sizes.height,
@@ -232,9 +233,9 @@ app.post("/add-border", async (req, res) => {
     } else {
       paperDims = PAPER_SIZES[paperSize];
       if (!paperDims) {
-        return res.status(400).json({
-          error: "Invalid paper size. Must be between A0-A6 or B0-B6",
-        });
+        return res
+          .status(400)
+          .json({ error: "Invalid paper size. Must be between A0 and A6" });
       }
     }
 
@@ -262,6 +263,7 @@ app.post("/add-border", async (req, res) => {
       case "fill":
         resizedImage = resizedImage.resize(targetWidth, targetHeight, {
           fit: "fill",
+          withoutEnlargement: false, // Ensure image can be enlarged
         });
         break;
       case "inside":
