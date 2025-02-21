@@ -94,7 +94,6 @@ async function convertPdfBase64ToImageBase64(pdfBase64) {
 
     // Convert base64 to buffer
     const pdfBuffer = Buffer.from(base64Data, "base64");
-
     // Convert PDF buffer to document
     const document = await pdf(pdfBuffer, {
       scale: 3, // This will help achieve high DPI
