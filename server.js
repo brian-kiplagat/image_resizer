@@ -114,6 +114,50 @@ async function convertPdfBase64ToImageBase64(pdfBase64) {
   }
 }
 
+// Helper function to determine file type and mime type from base64 string
+const getFileInfo = (base64String) => {
+  const matches =
+    base64String.match(/^data:([^;]+);base64,/) ||
+    base64String.match(/^@file\/([^;]+);base64,/);
+
+  if (!matches) return { fileType: "jpg", mimeType: "image/jpeg" }; // default
+
+  const mimeType = matches[1].toLowerCase();
+  let fileType;
+
+  switch (mimeType) {
+    case "image/jpeg":
+    case "image/jpg":
+      fileType = "jpg";
+      break;
+    case "image/png":
+      fileType = "png";
+      break;
+    case "image/webp":
+      fileType = "webp";
+      break;
+    case "image/gif":
+      fileType = "gif";
+      break;
+    case "image/avif":
+      fileType = "avif";
+      break;
+    case "image/tiff":
+      fileType = "tiff";
+      break;
+    case "image/svg+xml":
+      fileType = "svg";
+      break;
+    case "application/pdf":
+      fileType = "pdf";
+      break;
+    default:
+      fileType = "jpg";
+  }
+
+  return { fileType, mimeType };
+};
+
 // API route to add border to base64 image
 app.post("/add-border", async (req, res) => {
   try {
@@ -293,6 +337,8 @@ app.post("/add-border", async (req, res) => {
     }
 
     // Upload to Google Drive
+    const { fileType, mimeType } = getFileInfo(originalbase64Image);
+
     const fileMetadata = {
       name: `${orderID}_Modified.jpg`,
       parents: [folderId],
@@ -318,13 +364,13 @@ app.post("/add-border", async (req, res) => {
     const originalImageBuffer = Buffer.from(originalBase64Data, "base64");
 
     const originalFileMetadata = {
-      name: `${orderID}_Original.jpg`,
+      name: `${orderID}_Original.${fileType}`,
       parents: [folderId],
     };
 
     const originalMedia = {
-      mimeType: "image/jpeg",
-      body: require("stream").Readable.from([originalImageBuffer]), // Convert buffer to readable stream
+      mimeType: mimeType,
+      body: require("stream").Readable.from([originalImageBuffer]),
     };
 
     const originalFile = await driveClient.files.create({
