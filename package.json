@@ -19,7 +19,9 @@
     "googleapis": "^144.0.0",
     "nodemon": "^3.1.9",
     "pdf-poppler": "^0.2.1",
+    "pdf-to-img": "^4.4.0",
     "pdf2image": "^1.2.3",
+    "pdftopic": "^1.0.7-alpha",
     "sharp": "^0.33.5"
   }
 }

@@ -6,8 +6,6 @@ const { google } = require("googleapis");
 const path = require("path");
 const fs = require("fs");
 const axios = require("axios");
-const fsPromises = require("fs").promises;
-const poppler = require("pdf-poppler");
 require("dotenv").config();
 
 const app = express();
@@ -81,52 +79,36 @@ const SPREADSHEET_ID =
 // Add the PDF conversion function
 async function convertPdfBase64ToImageBase64(pdfBase64) {
   try {
-    const uniqueId = Date.now() + "-" + Math.random().toString(36).substr(2, 9);
-    const tempPdfPath = path.join("/tmp", `pdf-${uniqueId}.pdf`);
-    const outputImagePath = path.join("/tmp", `img-${uniqueId}`);
+    // Dynamically import pdf-to-img
+    const { pdf } = await import("pdf-to-img");
 
-    // Update validation to handle multiple PDF base64 prefixes
+    // Validate and extract base64 data
     if (!pdfBase64.includes(";base64,")) {
       throw new Error("Invalid PDF base64 string");
     }
 
-    // Extract base64 data after any valid prefix
     const base64Data = pdfBase64.split(";base64,")[1];
     if (!base64Data) {
       throw new Error("Invalid PDF base64 string");
     }
 
-    // Decode base64 and save PDF
+    // Convert base64 to buffer
     const pdfBuffer = Buffer.from(base64Data, "base64");
-    await fsPromises.writeFile(tempPdfPath, pdfBuffer);
 
-    // Configure poppler options
-    const options = {
-      format: "jpeg",
-      out_dir: path.dirname(outputImagePath),
-      out_prefix: path.basename(outputImagePath),
-      page: 1,
-      jpeg: {
-        quality: 100,
-      },
-      density: 300, // Match your 600 DPI requirement
-    };
+    // Convert PDF buffer to document
+    const document = await pdf(pdfBuffer, {
+      scale: 3, // This will help achieve high DPI
+    });
 
-    // Convert PDF to image
-    await poppler.convert(tempPdfPath, options);
+    // Get first page as buffer
+    const imageBuffer = await document.getPage(1);
+    if (!imageBuffer) {
+      throw new Error("Failed to convert PDF page to image");
+    }
 
-    // Read generated image
-    const imagePath = `${outputImagePath}-1.jpg`;
-    const imageBuffer = await fsPromises.readFile(imagePath);
+    // Convert to base64
     const imageBase64 = imageBuffer.toString("base64");
-
-    // Clean up temp files
-    await Promise.all([
-      fsPromises.unlink(tempPdfPath),
-      fsPromises.unlink(imagePath),
-    ]);
-
-    return `data:image/jpeg;base64,${imageBase64}`;
+    return `data:image/png;base64,${imageBase64}`; // Changed to PNG since pdf-to-img outputs PNG
   } catch (error) {
     console.error("Error converting PDF to image:", error);
     return null;
