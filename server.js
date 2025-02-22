@@ -155,6 +155,9 @@ const getFileInfo = (base64String) => {
     case "image/heic":
       fileType = "heic";
       break;
+    case "application/octet-stream":
+      fileType = "heic";
+      break;
     default:
       fileType = "jpg";
   }
