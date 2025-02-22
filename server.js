@@ -385,12 +385,34 @@ app.post("/add-border", async (req, res) => {
       fields: "id, webViewLink",
     });
 
-    // Upload original image without any processing
-    const originalBase64Data = originalbase64Image.replace(
-      /^data:image\/\w+;base64,/,
-      ""
-    );
-    const originalImageBuffer = Buffer.from(originalBase64Data, "base64");
+    // Upload original image/PDF without any processing
+    let originalBuffer;
+    if (fileType === "pdf") {
+      // Special handling for PDF files
+      const pdfBase64Data = originalbase64Image
+        .split(";base64,")[1] // Simpler split to get base64 data
+        .replace(/\s/g, ""); // Remove any whitespace
+
+      originalBuffer = Buffer.from(pdfBase64Data, "base64");
+
+      // Validate PDF header
+      const pdfHeader = originalBuffer.slice(0, 4).toString();
+      console.log("PDF header:", pdfHeader);
+
+      if (!pdfHeader.startsWith("%PDF")) {
+        console.error("Invalid PDF header:", originalBuffer.slice(0, 8));
+        return res.status(400).json({
+          error: "Invalid PDF format. File does not appear to be a valid PDF.",
+        });
+      }
+    } else {
+      // Handle images as before
+      const originalBase64Data = originalbase64Image.replace(
+        /^(?:data:|@file\/)[^;]+;base64,/,
+        ""
+      );
+      originalBuffer = Buffer.from(originalBase64Data, "base64");
+    }
 
     const originalFileMetadata = {
       name: `${orderID}_Original.${fileType}`,
@@ -399,8 +421,12 @@ app.post("/add-border", async (req, res) => {
 
     const originalMedia = {
       mimeType: mimeType,
-      body: require("stream").Readable.from([originalImageBuffer]),
+      body: require("stream").Readable.from([originalBuffer]),
     };
+
+    // Log for debugging
+    console.log("Original file type:", fileType);
+    console.log("Original MIME type:", mimeType);
 
     const originalFile = await driveClient.files.create({
       requestBody: originalFileMetadata,
