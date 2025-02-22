@@ -247,7 +247,7 @@ app.post("/add-border", async (req, res) => {
     // If the input is a HEIC image, convert it to JPEG/PNG
     else if (
       originalbase64Image.toLowerCase().includes("heic;base64,") ||
-      originalbase64Image.toLocaleLowerCase().includes("octet-stream;base64")
+      originalbase64Image.toLowerCase().includes("octet-stream;base64")
     ) {
       try {
         const heicBuffer = Buffer.from(
