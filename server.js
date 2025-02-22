@@ -280,7 +280,6 @@ app.post("/add-border", async (req, res) => {
     // Get paper dimensions based on orientation and custom sizes
     let paperDims;
     if (isCustom && sizes) {
-      resizeOption = "fill"; // Override resize option for custom sizes
       paperDims = {
         width: sizes.width,
         height: sizes.height,
