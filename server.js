@@ -425,7 +425,7 @@ app.post("/add-border", async (req, res) => {
     }
 
     const originalFileMetadata = {
-      name: `${orderID}_Original.${fileType}`,
+      name: `${name}_${orderID}_Original.${fileType}`,
       parents: [folderId],
     };
 
