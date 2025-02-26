@@ -478,6 +478,16 @@ const getImageFilenames = (orderId) => {
     original: `${orderId}_Original.jpg`,
   };
 };
+//get customer details from meta_data
+const getCustomerDetails = (metaData) => {
+  const name = metaData.find((m) => m.key === "name")?.value || "";
+  const addressDetails =
+    metaData.find((m) => m.key === "address_details")?.value || "";
+
+  console.log("Found customer details:", { name, addressDetails });
+  return { name, addressDetails };
+};
+
 
 app.post("/confirm-order", async (req, res) => {
   try {
@@ -496,8 +506,7 @@ app.post("/confirm-order", async (req, res) => {
     const order = orderResponse.data;
     const paperDetails = getPaperDetails(order.meta_data);
     const imageFiles = getImageFilenames(order.number);
-    const customerName = order.meta_data.name;
-    const shippingAddress = order.meta_data.adddress_details;
+    const customerDetails = getCustomerDetails(order.meta_data);
 
     // Check if payment was successful
     if (order.status === "processing" || order.status === "completed") {
@@ -539,8 +548,8 @@ app.post("/confirm-order", async (req, res) => {
                 paperDetails.borderSize, // Border size
                 paperDetails.orientation, // Orientation
                 imageFiles.modified, // Link to print image (modified filename)
-                customerName, // Customer name
-                shippingAddress, // Shipping address
+                customerDetails.name, // Customer name
+                customerDetails.addressDetails, // Shipping address
               ],
             ],
           },
