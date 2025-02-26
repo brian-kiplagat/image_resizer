@@ -471,19 +471,6 @@ const getPaperDetails = (metaData) => {
   };
 };
 
-// Get image link from line items
-const getImageLink = (lineItems) => {
-  return lineItems[0]?.image?.src || "";
-};
-
-// Format customer name
-const formatCustomerName = (shipping, billing) => {
-  // Try shipping name first, then billing name
-  const firstName = shipping.first_name || billing.first_name || "";
-  const lastName = shipping.last_name || billing.last_name || "";
-  return [firstName, lastName].filter(Boolean).join(" ") || "Guest";
-};
-
 // Get filenames for modified and original images
 const getImageFilenames = (orderId) => {
   return {
