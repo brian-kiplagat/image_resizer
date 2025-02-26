@@ -476,22 +476,6 @@ const getImageLink = (lineItems) => {
   return lineItems[0]?.image?.src || "";
 };
 
-// Format shipping address
-const formatShippingAddress = (shipping) => {
-  const parts = [
-    shipping.first_name,
-    shipping.last_name,
-    shipping.address_1,
-    shipping.address_2,
-    shipping.city,
-    shipping.state,
-    shipping.postcode,
-    shipping.country,
-  ].filter(Boolean); // Remove empty values
-
-  return parts.join(", ");
-};
-
 // Format customer name
 const formatCustomerName = (shipping, billing) => {
   // Try shipping name first, then billing name
@@ -525,8 +509,8 @@ app.post("/confirm-order", async (req, res) => {
     const order = orderResponse.data;
     const paperDetails = getPaperDetails(order.meta_data);
     const imageFiles = getImageFilenames(order.number);
-    const customerName = formatCustomerName(order.shipping, order.billing);
-    const shippingAddress = formatShippingAddress(order.shipping);
+    const customerName = order.meta_data.name;
+    const shippingAddress = order.meta_data.adddress_details;
 
     // Check if payment was successful
     if (order.status === "processing" || order.status === "completed") {
