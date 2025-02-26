@@ -501,10 +501,10 @@ const formatCustomerName = (shipping, billing) => {
 };
 
 // Get filenames for modified and original images
-const getImageFilenames = (name, orderId) => {
+const getImageFilenames = (orderId) => {
   return {
-    modified: `${name}_${orderId}_Modified.jpg`,
-    original: `${name}_${orderId}_Original.jpg`,
+    modified: `${orderId}_Modified.jpg`,
+    original: `${orderId}_Original.jpg`,
   };
 };
 
@@ -524,7 +524,7 @@ app.post("/confirm-order", async (req, res) => {
 
     const order = orderResponse.data;
     const paperDetails = getPaperDetails(order.meta_data);
-    const imageFiles = getImageFilenames(name,order.number);
+    const imageFiles = getImageFilenames(order.number);
     const customerName = formatCustomerName(order.shipping, order.billing);
     const shippingAddress = formatShippingAddress(order.shipping);
 
