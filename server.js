@@ -179,6 +179,7 @@ app.post("/add-border", async (req, res) => {
       resizeOption,
       isCustom,
       sizes,
+      name,
     } = req.body;
 
     //check if orderID is present and valid
@@ -231,6 +232,9 @@ app.post("/add-border", async (req, res) => {
       return res
         .status(400)
         .json({ error: "border_size must be between 0 and 100" });
+    }
+    if (!name || typeof name !== "string") {
+      return res.status(400).json({ error: "Invalid or missing name" });
     }
 
     let base64Image = originalbase64Image;
@@ -375,7 +379,7 @@ app.post("/add-border", async (req, res) => {
     const { fileType, mimeType } = getFileInfo(originalbase64Image);
 
     const fileMetadata = {
-      name: `${orderID}_Modified.jpg`,
+      name: `${name}_${orderID}_Modified.jpg`,
       parents: [folderId],
     };
 
@@ -497,10 +501,10 @@ const formatCustomerName = (shipping, billing) => {
 };
 
 // Get filenames for modified and original images
-const getImageFilenames = (orderId) => {
+const getImageFilenames = (name, orderId) => {
   return {
-    modified: `${orderId}_Modified.jpg`,
-    original: `${orderId}_Original.jpg`,
+    modified: `${name}_${orderId}_Modified.jpg`,
+    original: `${name}_${orderId}_Original.jpg`,
   };
 };
 
@@ -520,7 +524,7 @@ app.post("/confirm-order", async (req, res) => {
 
     const order = orderResponse.data;
     const paperDetails = getPaperDetails(order.meta_data);
-    const imageFiles = getImageFilenames(order.number);
+    const imageFiles = getImageFilenames(name,order.number);
     const customerName = formatCustomerName(order.shipping, order.billing);
     const shippingAddress = formatShippingAddress(order.shipping);
 
