@@ -484,8 +484,11 @@ const getCustomerDetails = (metaData) => {
   const addressDetails =
     metaData.find((m) => m.key === "address_details")?.value || "";
 
-  console.log("Found customer details:", { name, addressDetails });
-  return { name, addressDetails };
+  // Extract email from address details (second parameter in comma-separated string)
+  const email = addressDetails.split(", ")[1] || "";
+
+  console.log("Found customer details:", { name, addressDetails, email });
+  return { name, addressDetails, email };
 };
 
 app.post("/confirm-order", async (req, res) => {
@@ -566,7 +569,7 @@ app.post("/confirm-order", async (req, res) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              email: order.customer_email,
+              email: customerDetails.email,
               name: customerDetails.name,
               details: `Order ID: ${order.number}\nOrder Date: ${order.date_created}\nOrder Status: ${order.status}\nPaper Type: ${paperDetails.paperType}\nPaper Size: ${paperDetails.paperSize}\nBorder Size: ${paperDetails.borderSize}\nOrientation: ${paperDetails.orientation}`,
             }),
