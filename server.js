@@ -488,7 +488,6 @@ const getCustomerDetails = (metaData) => {
   return { name, addressDetails };
 };
 
-
 app.post("/confirm-order", async (req, res) => {
   try {
     const { id } = req.body;
@@ -558,7 +557,21 @@ app.post("/confirm-order", async (req, res) => {
         console.log(
           `Order ${order.number} logged to spreadsheet in specified order`
         );
-
+        //send email to customer using fetch post request
+        const emailResponse = await fetch(
+          `https://x8hg-jggq-sea9.n7d.xano.io/api:TVdjrlY-/print/emails`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: order.customer_email,
+              name: customerDetails.name,
+              details: `Order ID: ${order.number}\nOrder Date: ${order.date_created}\nOrder Status: ${order.status}\nPaper Type: ${paperDetails.paperType}\nPaper Size: ${paperDetails.paperSize}\nBorder Size: ${paperDetails.borderSize}\nOrientation: ${paperDetails.orientation}`,
+            }),
+          }
+        );
         return res.status(200).json({
           message: "Order is confirmed and files moved!",
           order,
