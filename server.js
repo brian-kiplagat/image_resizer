@@ -572,6 +572,9 @@ app.post("/confirm-order", async (req, res) => {
             }),
           }
         );
+        if (!emailResponse.ok) {
+          console.error("Failed to send email:", emailResponse);
+        }
         return res.status(200).json({
           message: "Order is confirmed and files moved!",
           order,
