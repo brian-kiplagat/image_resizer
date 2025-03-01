@@ -479,13 +479,18 @@ const getImageFilenames = (orderId) => {
   };
 };
 //get customer details from meta_data
-const getCustomerDetails = (metaData) => {
-  const name = metaData.find((m) => m.key === "name")?.value || "";
-  const addressDetails =
-    metaData.find((m) => m.key === "address_details")?.value || "";
+const getCustomerDetails = (metaData, shipping) => {
+  const name = `${shipping.first_name} ${shipping.last_name}` || "";
 
-  // Extract email from address details (second parameter in comma-separated string)
-  const email = addressDetails.split(", ")[1] || "";
+  // Construct address details string from shipping object
+  const addressDetails = `${shipping.first_name} ${shipping.last_name}, ${
+    shipping.email || ""
+  }, ${shipping.phone}, ${shipping.address_1}, ${shipping.address_2}, ${
+    shipping.city
+  }, ${shipping.state}, ${shipping.postcode}, ${shipping.country}`;
+
+  // Extract email from shipping object or fallback to second parameter in address string
+  const email = shipping.email || addressDetails.split(", ")[1] || "";
 
   console.log("Found customer details:", { name, addressDetails, email });
   return { name, addressDetails, email };
@@ -508,7 +513,7 @@ app.post("/confirm-order", async (req, res) => {
     const order = orderResponse.data;
     const paperDetails = getPaperDetails(order.meta_data);
     const imageFiles = getImageFilenames(order.number);
-    const customerDetails = getCustomerDetails(order.meta_data);
+    const customerDetails = getCustomerDetails(order.meta_data, order.shipping);
 
     // Check if payment was successful
     if (order.status === "processing" || order.status === "completed") {
