@@ -179,7 +179,7 @@ app.post("/add-border", async (req, res) => {
       resizeOption,
       isCustom,
       sizes,
-      name,
+     
     } = req.body;
 
     //check if orderID is present and valid
@@ -233,9 +233,7 @@ app.post("/add-border", async (req, res) => {
         .status(400)
         .json({ error: "border_size must be between 0 and 100" });
     }
-    if (!name || typeof name !== "string") {
-      return res.status(400).json({ error: "Invalid or missing name" });
-    }
+   
 
     let base64Image = originalbase64Image;
 
@@ -379,7 +377,7 @@ app.post("/add-border", async (req, res) => {
     const { fileType, mimeType } = getFileInfo(originalbase64Image);
 
     const fileMetadata = {
-      name: `${name}_${orderID}_Modified.jpg`,
+      name: `${orderID}_Modified.jpg`,
       parents: [folderId],
     };
 
@@ -425,7 +423,7 @@ app.post("/add-border", async (req, res) => {
     }
 
     const originalFileMetadata = {
-      name: `${name}_${orderID}_Original.${fileType}`,
+      name: `${orderID}_Original.${fileType}`,
       parents: [folderId],
     };
 
