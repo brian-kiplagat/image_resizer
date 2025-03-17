@@ -179,7 +179,6 @@ app.post("/add-border", async (req, res) => {
       resizeOption,
       isCustom,
       sizes,
-     
     } = req.body;
 
     //check if orderID is present and valid
@@ -233,7 +232,6 @@ app.post("/add-border", async (req, res) => {
         .status(400)
         .json({ error: "border_size must be between 0 and 100" });
     }
-   
 
     let base64Image = originalbase64Image;
 
@@ -310,33 +308,58 @@ app.post("/add-border", async (req, res) => {
     // First resize the image according to paper size and resize option
     let resizedImage = sharp(imageBuffer);
 
+    // Convert border size from mm to pixels at 600 DPI
+    // 1mm = 23.622047244094 pixels at 600 DPI
+    const borderSizeInPixels = Math.round(border_size * 23.622047244094);
+
     switch (resizeOption) {
       case "cover":
-        resizedImage = resizedImage.resize(targetWidth, targetHeight, {
-          fit: "cover",
-        });
+        // For cover, we need to account for the border in the target dimensions
+        resizedImage = resizedImage.resize(
+          targetWidth - borderSizeInPixels * 2,
+          targetHeight - borderSizeInPixels * 2,
+          {
+            fit: "cover",
+          }
+        );
         break;
       case "contain":
-        resizedImage = resizedImage.resize(targetWidth, targetHeight, {
-          fit: "contain",
-          background: { r: 255, g: 255, b: 255, alpha: 1 },
-        });
+        resizedImage = resizedImage.resize(
+          targetWidth - borderSizeInPixels * 2,
+          targetHeight - borderSizeInPixels * 2,
+          {
+            fit: "contain",
+            background: { r: 255, g: 255, b: 255, alpha: 1 },
+          }
+        );
         break;
       case "fill":
-        resizedImage = resizedImage.resize(targetWidth, targetHeight, {
-          fit: "fill",
-          withoutEnlargement: false, // Ensure image can be enlarged
-        });
+        resizedImage = resizedImage.resize(
+          targetWidth - borderSizeInPixels * 2,
+          targetHeight - borderSizeInPixels * 2,
+          {
+            fit: "fill",
+            withoutEnlargement: false,
+          }
+        );
         break;
       case "inside":
-        resizedImage = resizedImage.resize(targetWidth, targetHeight, {
-          fit: "inside",
-        });
+        resizedImage = resizedImage.resize(
+          targetWidth - borderSizeInPixels * 2,
+          targetHeight - borderSizeInPixels * 2,
+          {
+            fit: "inside",
+          }
+        );
         break;
       case "outside":
-        resizedImage = resizedImage.resize(targetWidth, targetHeight, {
-          fit: "outside",
-        });
+        resizedImage = resizedImage.resize(
+          targetWidth - borderSizeInPixels * 2,
+          targetHeight - borderSizeInPixels * 2,
+          {
+            fit: "outside",
+          }
+        );
         break;
       default:
         return res.status(400).json({ error: "Invalid resize option" });
@@ -351,8 +374,10 @@ app.post("/add-border", async (req, res) => {
     } else {
       const borderRGBA = hexToRGBA(border_color);
       const metadata = await sharp(resizedBuffer).metadata();
-      const newWidth = metadata.width + border_size * 2;
-      const newHeight = metadata.height + border_size * 2;
+
+      // Final dimensions should match the target paper size exactly
+      const newWidth = targetWidth;
+      const newHeight = targetHeight;
 
       processedImageBuffer = await sharp({
         create: {
@@ -363,7 +388,11 @@ app.post("/add-border", async (req, res) => {
         },
       })
         .composite([
-          { input: resizedBuffer, top: border_size, left: border_size },
+          {
+            input: resizedBuffer,
+            top: borderSizeInPixels,
+            left: borderSizeInPixels,
+          },
         ])
         .jpeg({
           quality: 100,
