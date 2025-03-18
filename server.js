@@ -621,20 +621,20 @@ app.post("/confirm-order", async (req, res) => {
         });
       } catch (error) {
         console.error("Error moving files:", error);
-        return res.status(500).json({
+        return res.status(200).json({
           error: "Failed to move files to confirmed folder",
           reason: error.message,
         });
       }
     } else {
-      return res.status(400).json({
+      return res.status(200).json({
         error: "Payment not completed or order not confirmed.",
         status: order.status,
       });
     }
   } catch (error) {
     console.error("Error confirming order:", error);
-    res.status(500).json({
+    res.status(200).json({
       error: "Failed to confirm order.",
       reason: error.message,
     });
