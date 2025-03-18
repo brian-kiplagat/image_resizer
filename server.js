@@ -507,16 +507,23 @@ const getImageFilenames = (orderId) => {
 };
 //get customer details from meta_data
 const getCustomerDetails = (metaData, shipping, billing) => {
-  const name = `${shipping.first_name} ${shipping.last_name}` || "";
+  const name =
+    `${shipping.first_name || billing.first_name} ${
+      shipping.last_name || billing.last_name
+    }` || "";
 
-  // Construct address details string from shipping object
-  const addressDetails = `${shipping.first_name} ${shipping.last_name}, ${
-    shipping.email || ""
-  }, ${shipping.phone}, ${shipping.address_1}, ${shipping.address_2}, ${
-    shipping.city
-  }, ${shipping.state}, ${shipping.postcode}, ${shipping.country}`;
+  // Construct address details string from shipping object with billing fallback
+  const addressDetails = `${shipping.first_name || billing.first_name} ${
+    shipping.last_name || billing.last_name
+  }, ${shipping.email || billing.email || ""}, ${
+    shipping.phone || billing.phone
+  }, ${shipping.address_1 || billing.address_1}, ${
+    shipping.address_2 || billing.address_2
+  }, ${shipping.city || billing.city}, ${shipping.state || billing.state}, ${
+    shipping.postcode || billing.postcode
+  }, ${shipping.country || billing.country}`;
 
-  // Extract email from shipping object or fallback to second parameter in address string
+  // Extract email from billing object
   const email = billing.email || "";
 
   console.log("Found customer details:", { name, addressDetails, email });
