@@ -616,8 +616,8 @@ app.post("/confirm-order", async (req, res) => {
         }
         return res.status(200).json({
           message: "Order is confirmed and files moved!",
-          order,
           movedFiles: files.map((f) => f.name),
+          order,
         });
       } catch (error) {
         console.error("Error moving files:", error);
