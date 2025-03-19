@@ -530,6 +530,105 @@ const getCustomerDetails = (metaData, shipping, billing) => {
   return { name, addressDetails, email };
 };
 
+// Add this function before the confirm-order endpoint
+async function updateOrderInSheet(
+  order,
+  paperDetails,
+  imageFiles,
+  customerDetails
+) {
+  try {
+    // First check if order number already exists in the sheet
+    const checkResponse = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: "Sheet1!A:J",
+    });
+
+    const rows = checkResponse.data.values || [];
+    // Find the row index with matching order number (column B)
+    const orderRowIndex = rows.findIndex(
+      (row) => row[1] === order.number.toString()
+    );
+
+    const newRowData = [
+      order.date_created, // Order date
+      order.number, // Order number
+      order.status, // Status
+      paperDetails.paperType, // Paper type
+      paperDetails.paperSize, // Paper size
+      paperDetails.borderSize, // Border size
+      paperDetails.orientation, // Orientation
+      imageFiles.modified, // Link to print image (modified filename)
+      customerDetails.name, // Customer name
+      customerDetails.addressDetails, // Shipping address
+    ];
+
+    if (orderRowIndex !== -1) {
+      // Order exists, update the row
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `Sheet1!A${orderRowIndex + 1}:J${orderRowIndex + 1}`,
+        valueInputOption: "USER_ENTERED",
+        resource: {
+          values: [newRowData],
+        },
+      });
+      console.log(
+        `Updated existing order ${order.number} in spreadsheet at row ${
+          orderRowIndex + 1
+        }`
+      );
+    } else {
+      // Order doesn't exist, append new row
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: SPREADSHEET_ID,
+        range: "Sheet1!A:J",
+        valueInputOption: "USER_ENTERED",
+        resource: {
+          values: [newRowData],
+        },
+      });
+      console.log(`Appended new order ${order.number} to spreadsheet`);
+    }
+    return true;
+  } catch (error) {
+    console.error("Error updating Google Sheet:", error);
+    return false;
+  }
+}
+
+async function sendOrderConfirmationEmail(
+  order,
+  paperDetails,
+  customerDetails
+) {
+  try {
+    const emailResponse = await fetch(
+      `https://x8hg-jggq-sea9.n7d.xano.io/api:TVdjrlY-/print/emails`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: customerDetails.email,
+          name: customerDetails.name,
+          details: `Order ID: ${order.number}\nOrder Date: ${order.date_created}\nOrder Status: ${order.status}\nPaper Type: ${paperDetails.paperType}\nPaper Size: ${paperDetails.paperSize}\nBorder Size: ${paperDetails.borderSize}\nOrientation: ${paperDetails.orientation}`,
+        }),
+      }
+    );
+
+    if (!emailResponse.ok) {
+      console.error("Failed to send email:", emailResponse);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error("Error sending confirmation email:", error);
+    return false;
+  }
+}
+
 app.post("/confirm-order", async (req, res) => {
   try {
     const { id } = req.body;
@@ -577,50 +676,17 @@ app.post("/confirm-order", async (req, res) => {
           console.log(`Moved file ${file.name} to confirmed folder`);
         }
 
-        // Log to Google Sheets with correct column order
-        await sheets.spreadsheets.values.append({
-          spreadsheetId: SPREADSHEET_ID,
-          range: "Sheet1!A:J",
-          valueInputOption: "USER_ENTERED",
-          resource: {
-            values: [
-              [
-                order.date_created, // Order date
-                order.number, // Order number
-                order.status, // Status
-                paperDetails.paperType, // Paper type
-                paperDetails.paperSize, // Paper size
-                paperDetails.borderSize, // Border size
-                paperDetails.orientation, // Orientation
-                imageFiles.modified, // Link to print image (modified filename)
-                customerDetails.name, // Customer name
-                customerDetails.addressDetails, // Shipping address
-              ],
-            ],
-          },
-        });
+        // Update Google Sheet
+        await updateOrderInSheet(
+          order,
+          paperDetails,
+          imageFiles,
+          customerDetails
+        );
 
-        console.log(
-          `Order ${order.number} logged to spreadsheet in specified order`
-        );
-        //send email to customer using fetch post request
-        const emailResponse = await fetch(
-          `https://x8hg-jggq-sea9.n7d.xano.io/api:TVdjrlY-/print/emails`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              email: customerDetails.email,
-              name: customerDetails.name,
-              details: `Order ID: ${order.number}\nOrder Date: ${order.date_created}\nOrder Status: ${order.status}\nPaper Type: ${paperDetails.paperType}\nPaper Size: ${paperDetails.paperSize}\nBorder Size: ${paperDetails.borderSize}\nOrientation: ${paperDetails.orientation}`,
-            }),
-          }
-        );
-        if (!emailResponse.ok) {
-          console.error("Failed to send email:", emailResponse);
-        }
+        // Send confirmation email
+        //await sendOrderConfirmationEmail(order, paperDetails, customerDetails);
+
         return res.status(200).json({
           message: "Order is confirmed and files moved!",
           movedFiles: files.map((f) => f.name),
