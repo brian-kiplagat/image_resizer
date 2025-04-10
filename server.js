@@ -309,67 +309,88 @@ app.post("/add-border", async (req, res) => {
     const targetHeight =
       orientation === "Landscape" ? paperDims.width : paperDims.height;
 
-    // Convert border size from mm to pixels at 600 DPI
-    const borderSizeInPixels = Math.round(border_size * 23.622047244094);
-
-    // Calculate inner dimensions (space for the image)
-    const innerWidth = targetWidth - borderSizeInPixels * 2;
-    const innerHeight = targetHeight - borderSizeInPixels * 2;
-
-    // First create the border canvas
-    const borderCanvas = await sharp({
-      create: {
-        width: targetWidth,
-        height: targetHeight,
-        channels: 4,
-        background: hexToRGBA(border_color),
-      },
-    }).toBuffer();
-
-    // Then resize the image to fit the inner dimensions
+    // First resize the image according to paper size and resize option
     let resizedImage = sharp(imageBuffer);
+
+    // Convert border size from mm to pixels at 600 DPI
+    // 1mm = 23.622047244094 pixels at 600 DPI
+    const borderSizeInPixels = Math.round(border_size * 23.622047244094);
 
     switch (resizeOption) {
       case "cover":
-        resizedImage = resizedImage.resize(innerWidth, innerHeight, {
-          fit: "cover",
-        });
+        // For cover, we need to account for the border in the target dimensions
+        resizedImage = resizedImage.resize(
+          targetWidth - borderSizeInPixels * 2,
+          targetHeight - borderSizeInPixels * 2,
+          {
+            fit: "cover",
+          }
+        );
         break;
       case "contain":
-        resizedImage = resizedImage.resize(innerWidth, innerHeight, {
-          fit: "contain",
-          background: { r: 255, g: 255, b: 255, alpha: 1 },
-        });
+        resizedImage = resizedImage.resize(
+          targetWidth - borderSizeInPixels * 2,
+          targetHeight - borderSizeInPixels * 2,
+          {
+            fit: "contain",
+            background: { r: 255, g: 255, b: 255, alpha: 1 },
+          }
+        );
         break;
       case "fill":
-        resizedImage = resizedImage.resize(innerWidth, innerHeight, {
-          fit: "fill",
-          withoutEnlargement: false,
-        });
+        resizedImage = resizedImage.resize(
+          targetWidth - borderSizeInPixels * 2,
+          targetHeight - borderSizeInPixels * 2,
+          {
+            fit: "fill",
+            withoutEnlargement: false,
+          }
+        );
         break;
       case "inside":
-        resizedImage = resizedImage.resize(innerWidth, innerHeight, {
-          fit: "inside",
-        });
+        resizedImage = resizedImage.resize(
+          targetWidth - borderSizeInPixels * 2,
+          targetHeight - borderSizeInPixels * 2,
+          {
+            fit: "inside",
+          }
+        );
         break;
       case "outside":
-        resizedImage = resizedImage.resize(innerWidth, innerHeight, {
-          fit: "outside",
-        });
+        resizedImage = resizedImage.resize(
+          targetWidth - borderSizeInPixels * 2,
+          targetHeight - borderSizeInPixels * 2,
+          {
+            fit: "outside",
+          }
+        );
         break;
       default:
         return res.status(400).json({ error: "Invalid resize option" });
     }
 
-    // Get the resized image buffer
+    // Get the resized buffer
     const resizedBuffer = await resizedImage.toBuffer();
 
     // Skip border processing if border_size is 0 or border_color is falsy
     if (border_size === 0 || !border_color) {
       processedImageBuffer = resizedBuffer;
     } else {
-      // Composite the resized image onto the border canvas
-      processedImageBuffer = await sharp(borderCanvas)
+      const borderRGBA = hexToRGBA(border_color);
+      const metadata = await sharp(resizedBuffer).metadata();
+
+      // Final dimensions should match the target paper size exactly
+      const newWidth = targetWidth;
+      const newHeight = targetHeight;
+
+      processedImageBuffer = await sharp({
+        create: {
+          width: newWidth,
+          height: newHeight,
+          channels: 4,
+          background: borderRGBA,
+        },
+      })
         .composite([
           {
             input: resizedBuffer,
